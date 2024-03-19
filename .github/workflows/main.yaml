@@ -45,7 +45,7 @@ jobs:
 #      - name: Check for Changes
 #        id: check_changes
 #        run: |
-#          TEMPLATE_CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'cloudformation-template.yaml' || true)
+#          TEMPLATE_CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'metrics-infra-cloudformation.yaml' || true)
 #          echo "::set-output name=template_changes::${TEMPLATE_CHANGES}"
 #
       - name: Deploy to AWS CloudFormation
