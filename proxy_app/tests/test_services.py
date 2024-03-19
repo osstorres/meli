@@ -9,7 +9,7 @@ class TestMercadoLibreAPIService(unittest.TestCase):
     def test_get_data_success(self, mock_get):
         mock_response = {"key": "value"}
         mock_get.return_value.json.return_value = mock_response
-        response = MercadoLibreAPIService.get_data("/test", params={})
+        response, _ = MercadoLibreAPIService.get_data("/test", params={})
         self.assertEqual(response, mock_response)
 
 
