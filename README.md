@@ -185,6 +185,10 @@ and a number of concurrent users in our application. To do this, we must go to..
 
 http://localhost:8089
 
+
+https://github.com/osstorres/meli/assets/36452775/cc47b317-204b-472f-b22e-ecc2caf1f3c9
+
+
 ---
 # 📖 Motivation to create
 
