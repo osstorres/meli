@@ -74,4 +74,12 @@ class MessageProcessor:
 
 
 def handler(event, context):
-    pass
+    print(f"MESSAGE {event}")
+    sqs_service = SQSService(endpoint_url=os.environ.get("SQS_ENDPOINT"))
+    dynamodb_service = DynamoDBService(endpoint_url=os.environ.get("DYNAMODB_ENDPOINT"))
+    message_processor = MessageProcessor(
+        sqs_service, dynamodb_service, os.environ.get("DYNAMODB_TABLE_NAME")
+    )
+    message_processor.process_messages(event)
+    print("======")
+    return {"statusCode": 200, "body": "OK"}
