@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+
+  redis:
+    image: redis
+    ports:
+      - "6380:6379"
+
+  django:
+    build:
+      context: ./proxy_app/
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=proxy.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CACHE_LOCATION=redis://redis:6379/2
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE
+      - AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY
+      - SECRET_KEY=proxy-iT859jujylqCR4mXOCUhd2N1d4gBat
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8123"]
+    ports:
+      - "8123:8123"
+    volumes:
+      - .:/proxy_app/app
+    depends_on:
+      - redis
+
+  celery:
+    build:
+      context: ./proxy_app/
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=proxy.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CACHE_LOCATION=redis://redis:6379/2
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE
+      - AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY
+      - SECRET_KEY=proxy-iT859jujylqCR4mXOCUhd2N1d4gBat
+    command: ["celery", "-A", "proxy", "worker", "-B", "-l", "ERROR"]
+    volumes:
+      - .:/proxy_app/app
+    depends_on:
+      - redis
+
+  flower:
+    build:
+      context: ./proxy_app/
+    command: celery -A proxy flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - DJANGO_CONFIGURATION=Dev
+      - DJANGO_SETTINGS_MODULE=proxy.settings
+      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - CACHE_LOCATION=redis://redis:6379/2
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE
+      - AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY
+      - SECRET_KEY=proxy-iT859jujylqCR4mXOCUhd2N1d4gBat
+    depends_on:
+      - redis
+      - celery
