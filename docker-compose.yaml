@@ -125,3 +125,17 @@ services:
       - DYNAMO_ENDPOINT=http://dynamodb-local:8000
     depends_on:
       - dynamodb-local
+
+  master:
+      image: locustio/locust:master
+      ports:
+       - "8089:8089"
+      volumes:
+        - ./:/mnt/locust
+      command: -f /mnt/locust/locustfile.py --master -H http://master:8089 -u 1000 -r 100
+
+  worker:
+    image: locustio/locust:master
+    volumes:
+      - ./:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --worker --master-host master

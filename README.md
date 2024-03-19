@@ -109,6 +109,17 @@ Containers in order docker-compose.yaml file:
    - **Dependencies**: Depends on `dynamodb-local`.
    - **Ports**: Exposes port 8001 for accessing the DynamoDB Admin UI.
 
+#### 10. **master**:
+   - **Description**: Master service for Locust used for load testing.
+   - **Usage**: Orchestrates and controls Locust load testing scenarios.
+   - **Ports**: Exposes port 8089 for accessing the Locust master.
+
+#### 11. **worker**:
+   - **Description**: Worker service for Locust used for load testing.
+   - **Usage**: Executes load testing scenarios defined by the master Locust service.
+   - **Dependencies**: Depends on the master Locust service.
+
+
 
 
 ## 🔨 Getting Started
