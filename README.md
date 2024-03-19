@@ -41,6 +41,7 @@ Algunos deseables:
 - Funcionar contra el api de mercadolibre real, estaría buenísimo, de todas formas son conocidos algunos errores con HTTP’s, por lo que cualquier otra alternativa (mocks, otra api, etc) que pruebe el funcionamiento también es válido
 
 
+## ⚠️ Suggestion: Read first "Motivation to create" Section
 ### Built With
 
 <p>
@@ -146,11 +147,47 @@ To run tests once you have the services started, you can execute the following c
   ```
 
 
-
+---
 # 📖 Motivation to create
 
+#### * Decision making: https://aws.amazon.com/es/architecture/well-architected/
 
-WIP
+Why did I choose this architecture?
+
+We can summarize some important requirements to start designing the architecture:
+
+- Generate an "API proxy" (proxy.com/categories/ ---> mercadolibre.com/categories/)
+- Blocking IPs and paths to the proxy
+- Visualize proxy usage statistics, if possible, expose a REST API
+- Run on Linux
+- Support scalability of 50k requests per second 
+
+First, we must consider that we will have a large number of requests to our proxy that we must support at the server level. It is not mentioned if there will be times of the day with more traffic, so we can start thinking about vertical and horizontal auto-scaling of our services. Additionally, an important requirement is to be able to block IPs and paths to our services. Based on this, we can take one of two paths: consider blocking at the application (code) level, which would create a significant bottleneck, or do it properly with a WAF. Additionally, we can consider geographical blocking (CloudFront) or latency, proximity, countries, etc.
+
+With these ideas in mind, the "simple" path with a basic architecture could be an EC2 instance with an auto-scaling group that increases instances as traffic increases. Initially, this may yield results, but we may fall short when scaling more services or considering decoupling components for further data processing. Due to this, I chose Kubernetes to self-manage some containers needed in the proxy. With Kubernetes, we can cover auto-scaling, redundancy, and operational excellence.
+
+We need to consume an external API (mercadolibre.com), it's important to handle exceptions that are beyond our control and return appropriate status codes. It's crucial to note that considering our example request (https://api.mercadolibre.com/categories/MLA97994), we can identify that we will likely have repeated requests over time from different users. In this use case, we can implement a cache to avoid re-requesting information from Mercado Libre. This way, we can provide much faster responses to our users, reduce third-party API failures, and scale the cache cluster for reading instead of our servers in a Kubernetes cluster, which would be more costly.
+
+At this point, we have covered the following:
+
+- Reliability
+- Horizontal and vertical scalability
+- Reliability
+- Efficiency
+
+
+For the proxy infrastructure, a crucial aspect highlighted by the Well-Architected Framework is security. Based on this, we will cover the part of blocking IPs and paths to the proxy. AWS WAF helps us have complex denial rules for a group of IPs, with IP sets, path blocking, and a combination of these towards the resources we expose, in this case, our EKS service.
+
+Once our proxy service is ready, we move on to the requirement of usage statistics. For this requirement, I took two approaches: one regarding resource usage metrics (CPU, memory, latency, execution time, cluster health, etc.) and another regarding application metadata. Infrastructure usage metrics can be covered using CloudWatch, which integrates well with our services, and an external tool like New Relic or Prometheus-Grafana for our EKS cluster. For application metadata metrics, I decided to create an event-driven architecture to manage the information to process, as described in the architecture diagram. Basically, our synchronous proxy responds as quickly as possible to the user, and we use Celery to handle asynchronous tasks that process metadata from user requests, such as the IP source and requested path. This metadata is formatted and sent to an SQS queue that keeps the messages available for a subscribed Lambda function to use this information and integrate it into DynamoDB for consumption through a REST API.
+
+Certainly, the question arises as to why we don't directly send the metadata to DynamoDB from Celery. I made this architecture decision for three reasons:
+
+- Reduce resource consumption in the deployment of Celery so that it only sends metadata to a queue and does not process it in DynamoDB.
+- Cost reduction when inserting into DynamoDB; instead of inserting item by item, the Lambda function can process batches of messages and send them to DynamoDB with lower latency at a VPC endpoint directly in its own network.
+- Having an event-driven architecture based on an SQS queue allows us more possibilities for operations with this information. For example, subscribing another Lambda function to send notifications in case of an unrecognized error state by our knowledge base in the external APIs indicating an uncontrolled failure. Since these are metadata statistics, they don't need to be available at that moment for reading. This processing to DynamoDB can take its time. Important for the production and development environment: Currently, in this solution, messages are read one by one. Ideally, messages should be processed in batches, for example, 10k messages in each reading from the SQS queue in batch.
+
+
+Once we have the application metadata available in DynamoDB, we will use a serverless architecture to serve a REST API based on FastAPI that exposes our DynamoDB data through an API Gateway. This is a simple but functional architecture for our current use case.
 
 
 # 🧪 First ideas
