@@ -120,6 +120,72 @@ Containers in order docker-compose.yaml file:
    - **Dependencies**: Depends on the master Locust service.
 
 
+
+----
+
+# Project structure
+
+
+  ```sh
+├── README.md
+├── api_stats           ------>     Fast Api APP serverless
+│   ├── Dockerfile
+│   ├── __init__.py
+│   ├── lambda.py
+│   └── requirements.txt
+├── docker-compose.yaml
+├── kubernetes            ------>     K8s manifests
+│   └── deployment.yaml
+├── lambda_consumer         ------>    Consumer lambda SQS 
+│   ├── Dockerfile
+│   ├── __init__.py
+│   ├── lambda.py
+│   └── requirements.txt
+├── locust               ------>     Load testing directory app
+│   ├── Dockerfile
+│   ├── __init__.py
+│   ├── entrypoint.sh
+│   └── locustfile.py
+├── locustfile.py
+├── metrics-infra-cloudformation.yaml   ------>    Cloudformation template
+├── proxy_app                 ------>     Proxy Core app
+│   ├── Dockerfile
+│   ├── Pipfile
+│   ├── Pipfile.lock
+│   ├── manage.py
+│   ├── monitoring
+│   │   ├── __init__.py
+│   │   ├── apps.py
+│   │   ├── migrations
+│   │   │   └── __init__.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── operations
+│   │   ├── __init__.py
+│   │   └── tasks.py
+│   ├── proxy                  ------>     Core proxy code
+│   │   ├── __init__.py
+│   │   ├── asgi.py
+│   │   ├── celery.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── proxy_pass
+│   │   ├── __init__.py
+│   │   ├── apps.py
+│   │   ├── services.py
+│   │   └── views.py
+│   ├── pytest.ini
+│   └── tests
+│       ├── __init__.py
+│       ├── test_services.py
+│       └── test_views.py
+└── setup                     ------>     Setup AWS localstack
+    ├── Dockerfile
+    ├── __init__.py
+    └── entrypoint.sh
+
+  ```
 ----
 
 #  🔨 Getting Started
@@ -189,6 +255,106 @@ http://localhost:8089
 https://github.com/osstorres/meli/assets/36452775/cc47b317-204b-472f-b22e-ecc2caf1f3c9
 
 
+
+
+---
+
+# 🤔 How does it work 
+
+Django Rest Framework allows us to create routes quickly and easily for our services. At the moment, we are allowing any route to our proxy to be processed by our MercadoLibre service.
+
+Within proxy_app/proxy_pass/views.py, we can find the endpoint we're exposing to access our proxy service, which contains the following code:
+
+
+
+```bash
+class ProxyView(APIView):
+    def get(self, request, *args, **kwargs):
+        path = request.path
+        params = request.query_params
+        cache_key = f"{path}"
+
+        # Attempt to retrieve data from cache
+        cached_data = CacheService.get_from_cache(cache_key)
+        if cached_data:
+            MercadoLibreAPIService.process_metadata(request, True, 200)
+            return Response(cached_data)
+
+        # Fetch data from MercadoLibre API
+        try:
+
+            data = MercadoLibreAPIService.get_data(path, params)
+            MercadoLibreAPIService.process_metadata(request, False, 200)
+            CacheService.store_in_cache(cache_key, data)
+
+            return Response(data)
+        except requests.RequestException as e:
+            # todo handle status code from api
+            status = e.status_code if hasattr(e, "status_code") else 400
+            MercadoLibreAPIService.process_metadata(request, False, status)
+
+            return Response({"error": str(e)}, status=status)
+
+```
+
+Our view is solely responsible for processing the request to our MercadoLibreAPIService, 
+where the application logic resides. Additionally, we have a CacheService that manages the cache. If our request is already cached, we simply process the response back to the user.
+
+If the request is not cached, we request it through MercadoLibreAPIService.process_metadata.
+
+```bash
+class MercadoLibreAPIService:
+    BASE_URL = "https://api.mercadolibre.com"
+
+    @classmethod
+    def get_data(cls, path: str, params: Dict[str, str]) -> Dict:
+        """
+        Make a GET request to the MercadoLibre API.
+        """
+        url = f"{cls.BASE_URL}{path}"
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raise exception if request fails
+        return response.json()
+
+    @classmethod
+    def process_metadata(cls, request, cached: bool, status_code: int):
+        send_metadata_to_sqs.delay(
+            request.META.get("REMOTE_ADDR"),
+            request.method,
+            request.path,
+            dict(request.query_params),
+            dict(request.headers),
+            cached,
+            status_code,
+        )
+```
+
+Our get_data function only processes the request using the Python requests package.
+
+
+
+### Cache service
+
+
+```bash
+class CacheService:
+    @staticmethod
+    def get_from_cache(cache_key: str) -> Any | None:
+        """
+        Retrieve data from cache.
+        """
+        if cached_data := cache.get(cache_key):
+            return json.loads(cached_data)
+        return None
+
+    @staticmethod
+    def store_in_cache(cache_key: str, data: Dict, expiration_time: int = 3600):
+        """
+        Store data in cache.
+        """
+        cache.set(cache_key, json.dumps(data), expiration_time)
+```
+
 ---
 # 📖 Motivation to create
 
@@ -249,3 +415,11 @@ Once we have the application metadata available in DynamoDB, we will use a serve
 
 
 
+# ✨ Production Env ✨ -- WIP
+
+
+### Proxy URL :
+
+### Stats Metadata API: 
+
+### Dashboards

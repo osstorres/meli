@@ -19,13 +19,11 @@ class ProxyView(APIView):
         # Fetch data from MercadoLibre API
         try:
 
-            data = MercadoLibreAPIService.get_data(path, params)
-            MercadoLibreAPIService.process_metadata(request, False, 200)
+            data, status = MercadoLibreAPIService.get_data(path, params)
+            MercadoLibreAPIService.process_metadata(request, False, status)
             CacheService.store_in_cache(cache_key, data)
-
             return Response(data)
         except requests.RequestException as e:
-            # todo handle status code from api
             status = e.status_code if hasattr(e, "status_code") else 400
             MercadoLibreAPIService.process_metadata(request, False, status)
 

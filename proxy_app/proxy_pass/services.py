@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from django.core.cache import cache
 import requests
 import json
@@ -9,14 +9,14 @@ class MercadoLibreAPIService:
     BASE_URL = "https://api.mercadolibre.com"
 
     @classmethod
-    def get_data(cls, path: str, params: Dict[str, str]) -> Dict:
+    def get_data(cls, path: str, params: Dict[str, str]) -> Tuple:
         """
         Make a GET request to the MercadoLibre API.
         """
         url = f"{cls.BASE_URL}{path}"
         response = requests.get(url, params=params)
         response.raise_for_status()  # Raise exception if request fails
-        return response.json()
+        return response.json(), response.status_code
 
     @classmethod
     def process_metadata(cls, request, cached: bool, status_code: int):
