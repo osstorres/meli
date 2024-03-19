@@ -42,12 +42,12 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-#      - name: Check for Changes
-#        id: check_changes
-#        run: |
-#          TEMPLATE_CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'metrics-infra-cloudformation.yaml' || true)
-#          echo "::set-output name=template_changes::${TEMPLATE_CHANGES}"
-#
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          TEMPLATE_CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'metrics-infra-cloudformation.yaml' || true)
+          echo "::set-output name=template_changes::${TEMPLATE_CHANGES}"
+
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
@@ -55,5 +55,5 @@ jobs:
           template: metrics-infra-cloudformation.yaml
           parameter-overrides: "LambdaFastApiImage=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/fastapi-lambda:latest,ConsumerLambdaImage=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/consumer-lambda:latest"
           capabilities: CAPABILITY_NAMED_IAM
-##        if: steps.check_changes.outputs.template_changes != ''
-#
+        if: steps.check_changes.outputs.template_changes != ''
+

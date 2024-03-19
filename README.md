@@ -11,7 +11,7 @@
 
 
 
-## About The Project
+# 🚧 About The Project
 
 Mercadolibre hoy en día correr sus aplicaciones en más de 20000 servidores, estos suelen comunicarse entre sí a través de apis, algunas accesibles desde el exterior (api.mercadolibre.com).
 Uno de los problemas que tenemos actualmente es como controlar y medir estas interconexiones. Para esto necesitamos crear e implementar un "proxy de apis" (codear).
@@ -40,7 +40,7 @@ Algunos deseables:
 - Tener algún dibujo, diagrama u otros sobre como es el diseño, funcionamiento y escalabilidad del sistema suma mucho
 - Funcionar contra el api de mercadolibre real, estaría buenísimo, de todas formas son conocidos algunos errores con HTTP’s, por lo que cualquier otra alternativa (mocks, otra api, etc) que pruebe el funcionamiento también es válido
 
-
+---
 ## ⚠️ Suggestion: Read first "Motivation to create" Section
 ### Built With
 
@@ -49,12 +49,11 @@ Algunos deseables:
     <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/amazonwebservices/amazonwebservices-plain-wordmark.svg" title="AWS" alt="AWS" width="100" height="100" />&nbsp;
 </p>
 
-
-
+---
 
 
 <!-- GETTING STARTED -->
-## ⚡️ Development environment explain
+# ⚡️ Development environment explain
 
 Containers in order docker-compose.yaml file:
 
@@ -121,9 +120,9 @@ Containers in order docker-compose.yaml file:
    - **Dependencies**: Depends on the master Locust service.
 
 
+----
 
-
-## 🔨 Getting Started
+#  🔨 Getting Started
 
 Start the project
 
@@ -145,6 +144,49 @@ To run tests once you have the services started, you can execute the following c
   ```sh
   docker-compose exec -e DJANGO_CONFIGURATION=Testing django pipenv run pytest
   ```
+
+# 🥷🏽 Usage Development environment
+
+Once you have the services up and running, the use of the proxy is as follows:
+
+
+Proxy URL : http://localhost:8123/
+Path category: categories/MLA5726 
+
+
+  ```sh
+❯ curl http://localhost:8123/categories/MLA5726
+ ```
+<img src="images/proxy_test1.png" alt="proxy_test1" width="500" height="300">
+
+If you request this URL again, it will be responded through the Redis cache.
+
+To visualize metadata statistics of requests (application level).
+
+  ```sh
+❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+-H "Content-Type: application/json" \
+-d '{"resource": "/stats", "path": "/stats", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
+ ```
+
+To visualize asynchronous tasks. http://localhost:5555/tasks
+
+<img src="images/flower.png" alt="flower" width="900" height="300">
+
+
+To visualize metadata dynamodb http://localhost:8001
+
+<img src="images/admindb.png" alt="db" width="900" height="500">
+
+# 💣 Load Testing
+
+For load testing, we will use Locust, which will allow us to simulate requests 
+and a number of concurrent users in our application. To do this, we must go to...
+
+http://localhost:8089
+
+
+https://github.com/osstorres/meli/assets/36452775/cc47b317-204b-472f-b22e-ecc2caf1f3c9
 
 
 ---
@@ -170,7 +212,6 @@ We need to consume an external API (mercadolibre.com), it's important to handle 
 
 At this point, we have covered the following:
 
-- Reliability
 - Horizontal and vertical scalability
 - Reliability
 - Efficiency
@@ -189,6 +230,7 @@ Certainly, the question arises as to why we don't directly send the metadata to 
 
 Once we have the application metadata available in DynamoDB, we will use a serverless architecture to serve a REST API based on FastAPI that exposes our DynamoDB data through an API Gateway. This is a simple but functional architecture for our current use case.
 
+---
 
 # 🧪 First ideas
 
@@ -199,7 +241,11 @@ Once we have the application metadata available in DynamoDB, we will use a serve
 
 ![arch2](images/arch2.png)
 
+---
 
-# 
+# 🏗️ Architecture️  
+
+![arch2](images/arch3.jpeg)
+
 
 
