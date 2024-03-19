@@ -230,6 +230,7 @@ Certainly, the question arises as to why we don't directly send the metadata to 
 
 Once we have the application metadata available in DynamoDB, we will use a serverless architecture to serve a REST API based on FastAPI that exposes our DynamoDB data through an API Gateway. This is a simple but functional architecture for our current use case.
 
+---
 
 # 🧪 First ideas
 
@@ -240,8 +241,9 @@ Once we have the application metadata available in DynamoDB, we will use a serve
 
 ![arch2](images/arch2.png)
 
+---
 
-# ⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️⚙️
+# 🏗️ Architecture️  
 
 ![arch2](images/arch3.jpeg)
 
