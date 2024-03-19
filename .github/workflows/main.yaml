@@ -22,7 +22,7 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-#
+
       - name: Build, tag, and push image to Amazon ECR LAMBDA CONSUMER (SQS)
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -36,6 +36,16 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: fastapi-lambda
+          IMAGE_TAG: latest
+        run: |
+          cd api_stats/
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Build, tag, and push image to Amazon ECR PROXY APP (CORE)
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: proxy-app
           IMAGE_TAG: latest
         run: |
           cd api_stats/
