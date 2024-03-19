@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==4.0.0"
+djangorestframework = "*"
+gunicorn = "==20.1.0"
+django-cors-headers = "*"
+django-redis = "*"
+black = "*"
+celery = "*"
+flower = "*"
+django-configurations = "*"
+requests = "*"
+boto3 = "*"
+pytest = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
