@@ -212,7 +212,6 @@ We need to consume an external API (mercadolibre.com), it's important to handle 
 
 At this point, we have covered the following:
 
-- Reliability
 - Horizontal and vertical scalability
 - Reliability
 - Efficiency
