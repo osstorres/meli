@@ -281,10 +281,10 @@ All status code response filtered by year and month (application level).
     "requestContext": {},
     "multiValueQueryStringParameters": {
         "year": [
-            2024
+            "2024"
         ],
         "month": [
-            3
+            "03"
         ]
     },
     "Content-Type": "application/json"
