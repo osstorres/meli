@@ -44,16 +44,18 @@ aws \
   --region us-east-1
 
 echo "Create DynamoDB table"
-aws \
-  dynamodb create-table \
+aws dynamodb create-table \
   --table-name $DYNAMODB_TABLE_NAME \
   --attribute-definitions \
     AttributeName=date_key,AttributeType=S \
+    AttributeName=path,AttributeType=S \
   --key-schema \
     AttributeName=date_key,KeyType=HASH \
+    AttributeName=path,KeyType=RANGE \
   --provisioned-throughput \
     ReadCapacityUnits=5,WriteCapacityUnits=5 \
   --endpoint-url $DYNAMODB_ENDPOINT
+
 
 echo "Generating Lambda function ZIP"
 zip -r lambda_consumer.zip lambda.py requirements.txt

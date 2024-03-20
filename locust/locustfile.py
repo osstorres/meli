@@ -2,6 +2,7 @@ from locust import HttpLocust, TaskSet, task
 
 # skip
 
+
 class UserTasks(TaskSet):
 
     @task
