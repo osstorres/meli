@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 import boto3
 import os
 from mangum import Mangum
+from collections import Counter
+from operator import itemgetter
 
 app = FastAPI()
 
@@ -42,6 +44,44 @@ dynamodb_service = DynamoDBService(
 async def root():
     # For testing :)
     return {"message": "Hello World!"}
+
+
+@app.get("/status_code_most_common")
+async def get_most_common_status_code():
+    items = dynamodb_service.scan_table()
+    status_codes = [item["response_code"]["N"] for item in items]
+    status_code_counter = Counter(status_codes)
+    most_common_status_code = status_code_counter.most_common(1)
+    return {"most_common_status_code": most_common_status_code[0][0]}
+
+
+@app.get("/path_most_common")
+async def get_most_common_path():
+    items = dynamodb_service.scan_table()
+    paths = [item["path"]["S"] for item in items]
+    path_counter = Counter(paths)
+    most_common_path = path_counter.most_common(1)
+    return {"most_common_path": most_common_path[0][0]}
+
+
+@app.get("/cache_percentage")
+async def get_cache_percentage():
+    items = dynamodb_service.scan_table()
+    total_requests = len(items)
+    cached_requests = sum(
+        bool(item.get("cached", {}).get("BOOL", False)) for item in items
+    )
+
+    if total_requests == 0:
+        return {"error": "No se encontraron solicitudes en la tabla."}
+
+    percentage_cached = round((cached_requests / total_requests) * 100, 2)
+    percentage_not_cached = round(100 - percentage_cached, 2)
+
+    return {
+        "cached_percentage": percentage_cached,
+        "not_cached_percentage": percentage_not_cached,
+    }
 
 
 @app.get("/stats")

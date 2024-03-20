@@ -2,7 +2,7 @@ import os
 from os.path import join
 from distutils.util import strtobool
 
-from configurations import Configuration
+from configurations import Configuration, values
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -84,7 +84,7 @@ class Base(Configuration):  # pylint:disable=W0232
 
     # Set DEBUG to False as a default for safety
     # https://docs.djangoproject.com/en/dev/ref/settings/#debug
-    DEBUG = strtobool(os.getenv("DJANGO_DEBUG", "no"))
+    DEBUG = values.BooleanValue(default=True)
 
     # Password Validation
     # https://docs.djangoproject.com/en/2.0/topics/auth/passwords/#module-django.contrib.auth.password_validation
@@ -156,7 +156,7 @@ class Base(Configuration):  # pylint:disable=W0232
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": os.getenv("CACHE_LOCATION"),
+            "LOCATION": os.getenv("LOCATION"),
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
             },
@@ -165,14 +165,14 @@ class Base(Configuration):  # pylint:disable=W0232
 
     # IP Rate limit and block
     RATELIMIT_USE_CACHE = "default"
-    BLOCKED_IPS = []
-    CACHED_PATHS = ["categories", "sites"]
+    BLOCKED_IPS = os.getenv("BLOCKED_IPS")
+    CACHED_PATHS = os.getenv("CACHED_PATHS")
 
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
 
-    CELERY_BROKER_URL = os.getenv("DJANGO_CELERY_BROKER_URL")
-    CELERY_RESULT_BACKEND = os.getenv("DJANGO_CELERY_RESULT_BACKEND")
+    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
 
 
 class Dev(Base):
@@ -183,7 +183,6 @@ class Dev(Base):
 
 class Production(Base):
     INSTALLED_APPS = Base.INSTALLED_APPS
-    SECRET_KEY = os.getenv("SECRET_KEY")
     ALLOWED_HOSTS = ["*"]
 
 

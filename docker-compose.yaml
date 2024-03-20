@@ -18,13 +18,15 @@ services:
     environment:
       - DJANGO_CONFIGURATION=Dev
       - DJANGO_SETTINGS_MODULE=proxy.settings
-      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
-      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - CACHE_LOCATION=redis://redis:6379/2
-      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
-      - DYNAMODB_TABLE_NAME=stats
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - BLOCKED_IPS=[]
+      - LOCATION=redis://redis:6379/2
       - AWS_DEFAULT_REGION=us-east-1
+      - CACHED_PATHS=["categories", "sites"]
       - AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE
+      - SQS_ENDPOINT=http://localstack:4566
+      - SQS_QUEUE_URL=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/stats_queue
       - AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY
       - SECRET_KEY=proxy-iT859jujylqCR4mXOCUhd2N1d4gBat
     command: ["python", "manage.py", "runserver", "0.0.0.0:8123"]
@@ -43,12 +45,12 @@ services:
     environment:
       - DJANGO_CONFIGURATION=Dev
       - DJANGO_SETTINGS_MODULE=proxy.settings
-      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
-      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - CACHE_LOCATION=redis://redis:6379/2
-      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
-      - DYNAMODB_TABLE_NAME=stats
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - BLOCKED_IPS=[]
+      - LOCATION=redis://redis:6379/2
       - AWS_DEFAULT_REGION=us-east-1
+      - CACHED_PATHS=["categories", "sites"]
       - AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE
       - SQS_ENDPOINT=http://localstack:4566
       - SQS_QUEUE_URL=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/stats_queue
@@ -69,13 +71,15 @@ services:
     environment:
       - DJANGO_CONFIGURATION=Dev
       - DJANGO_SETTINGS_MODULE=proxy.settings
-      - DJANGO_CELERY_BROKER_URL=redis://redis:6379/1
-      - DJANGO_CELERY_RESULT_BACKEND=redis://redis:6379/1
-      - CACHE_LOCATION=redis://redis:6379/2
-      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
-      - DYNAMODB_TABLE_NAME=stats
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - BLOCKED_IPS=[]
+      - LOCATION=redis://redis:6379/2
       - AWS_DEFAULT_REGION=us-east-1
+      - CACHED_PATHS=["categories", "sites"]
       - AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE
+      - SQS_ENDPOINT=http://localstack:4566
+      - SQS_QUEUE_URL=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/stats_queue
       - AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY
       - SECRET_KEY=proxy-iT859jujylqCR4mXOCUhd2N1d4gBat
     depends_on:
