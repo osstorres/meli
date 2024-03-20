@@ -3,6 +3,10 @@ from django.core.cache import cache
 import requests
 import json
 from operations.tasks import send_metadata_to_sqs
+from django.conf import settings
+import logging
+
+logger = logging.getLogger("django")
 
 
 class MercadoLibreAPIService:
@@ -38,6 +42,7 @@ class CacheService:
         Retrieve data from cache.
         """
         if cached_data := cache.get(cache_key):
+            logger.info(f"=== RESPONSE CACHED {cache_key}")
             return json.loads(cached_data)
         return None
 
@@ -46,4 +51,9 @@ class CacheService:
         """
         Store data in cache.
         """
-        cache.set(cache_key, json.dumps(data), expiration_time)
+        allowed_cache = any(
+            word in settings.CACHED_PATHS for word in cache_key.split("/")
+        )
+        if allowed_cache:
+            cache.set(cache_key, json.dumps(data), expiration_time)
+            logger.info(f"=== CACHED RESPONSE {cache_key}")

@@ -34,6 +34,7 @@ class Base(Configuration):  # pylint:disable=W0232
         "django.contrib.messages.middleware.MessageMiddleware",
         "django.middleware.clickjacking.XFrameOptionsMiddleware",
         "corsheaders.middleware.CorsMiddleware",
+        "proxy_pass.middleware_block_ip.BlockIPMiddleware",
     )
 
     ALLOWED_HOSTS = ["*"]
@@ -162,6 +163,11 @@ class Base(Configuration):  # pylint:disable=W0232
         }
     }
 
+    # IP Rate limit and block
+    RATELIMIT_USE_CACHE = "default"
+    BLOCKED_IPS = []
+    CACHED_PATHS = ["categories", "sites"]
+
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
 
@@ -188,4 +194,3 @@ class Testing(Base):
             "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
         }
     }
-    CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}
