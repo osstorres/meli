@@ -192,12 +192,17 @@ Resources:
       AttributeDefinitions:
         - AttributeName: date_key
           AttributeType: S
+        - AttributeName: path
+          AttributeType: S
       KeySchema:
         - AttributeName: date_key
           KeyType: HASH
+        - AttributeName: path
+          KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: 10
-        WriteCapacityUnits: 10
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
 
 
   CloudWatchLogsRole:

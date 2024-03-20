@@ -3,7 +3,6 @@ import boto3
 import os
 from mangum import Mangum
 from collections import Counter
-from operator import itemgetter
 
 app = FastAPI()
 
@@ -31,6 +30,29 @@ class DynamoDBService:
         :return: A list of all items in the table.
         """
         response = self.client.scan(TableName=self.table_name)
+        return response.get("Items", [])
+
+    def query_by_year_and_month(self, year: str, month: str):
+        """
+        The query_by_year_and_month function takes in a year and month as
+        strings, and returns all the items from the table that have a
+        date_key attribute that begins with those values. For example,
+        if you pass in ?year=2024&month=12, it will return
+        all the items from Dec 2024
+
+        :param year: str: Specify the year to query for
+        :param month: str: Filter the data by month
+        :return: A list of items that match the year and month
+        """
+
+        start_date = f"{year}-{month}"
+
+        response = self.client.scan(
+            TableName=self.table_name,
+            FilterExpression="begins_with(#date_key, :start_date)",
+            ExpressionAttributeNames={"#date_key": "date_key"},
+            ExpressionAttributeValues={":start_date": {"S": start_date}},
+        )
         return response.get("Items", [])
 
 
@@ -88,6 +110,13 @@ async def get_cache_percentage():
 async def get_stats():
     items = dynamodb_service.scan_table()
     return {"stats": items}
+
+
+@app.get("/status_code_by_year_and_month")
+async def get_status_code_by_year_and_month(year: str, month: str):
+    items = dynamodb_service.query_by_year_and_month(year, month)
+    status_codes = {item["response_code"]["N"] for item in items}
+    return {"status_codes": list(status_codes)}
 
 
 handler = Mangum(app)

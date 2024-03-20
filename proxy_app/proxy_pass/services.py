@@ -54,6 +54,7 @@ class CacheService:
         allowed_cache = any(
             word in settings.CACHED_PATHS for word in cache_key.split("/")
         )
+        logger.info(f"=== CACHE ALLOWED {allowed_cache} - key {cache_key}")
         if allowed_cache:
             cache.set(cache_key, json.dumps(data), expiration_time)
             logger.info(f"=== CACHED RESPONSE {cache_key}")
