@@ -213,6 +213,9 @@ To run tests once you have the services started, you can execute the following c
 
 # 🥷🏽 Usage Development environment
 
+
+### 🚥 Proxy core application
+
 Once you have the services up and running, the use of the proxy is as follows:
 
 
@@ -227,7 +230,10 @@ Path category: categories/MLA5726
 
 If you request this URL again, it will be responded through the Redis cache.
 
-To visualize metadata statistics of requests (application level).
+
+### 🎰 Fast Api metrics in house (product - lambda)
+
+To visualize all metadata statistics of requests (application level).
 
   ```sh
 ❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
@@ -235,10 +241,66 @@ To visualize metadata statistics of requests (application level).
 -d '{"resource": "/stats", "path": "/stats", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
  ```
 
+
+To visualize most common path metric (application level).
+
+  ```sh
+❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+-H "Content-Type: application/json" \
+-d '{"resource": "/path_most_common", "path": "/path_most_common", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
+ ```
+
+To get cache percentage of all metrics (application level).
+
+  ```sh
+❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+-H "Content-Type: application/json" \
+-d '{"resource": "/cache_percentage", "path": "/cache_percentage", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
+ ```
+
+
+To get cache percentage of all metrics (application level).
+
+  ```sh
+❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+-H "Content-Type: application/json" \
+-d '{"resource": "/cache_percentage", "path": "/cache_percentage", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
+ ```
+
+
+
+All status code response filtered by year and month (application level).
+
+  ```sh
+❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
+-H "Content-Type: application/json" \
+-d '{
+    "resource": "/status_code_by_year_and_month",
+    "path": "/status_code_by_year_and_month",
+    "httpMethod": "GET",
+    "requestContext": {},
+    "multiValueQueryStringParameters": {
+        "year": [
+            2024
+        ],
+        "month": [
+            3
+        ]
+    },
+    "Content-Type": "application/json"
+}'
+ ```
+
+
+
+### 🍀 Celery flower
+
 To visualize asynchronous tasks. http://localhost:5555/tasks
 
 <img src="images/flower.png" alt="flower" width="900" height="300">
 
+
+### 🛢️ DynamoDB admin
 
 To visualize metadata dynamodb http://localhost:8001
 
@@ -268,6 +330,21 @@ Within proxy_app/proxy_pass/views.py, we can find the endpoint we're exposing to
 
 
 ```bash
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .services import CacheService, MercadoLibreAPIService
+import requests
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
+from django.conf import settings
+
+
+@method_decorator(
+    ratelimit(key="ip", rate="5/m", method=["POST"], block=True), name="post"
+)
+@method_decorator(
+    ratelimit(key="ip", rate="50000/s", method="GET", block=True), name="get"
+)
 class ProxyView(APIView):
     def get(self, request, *args, **kwargs):
         path = request.path
@@ -282,18 +359,19 @@ class ProxyView(APIView):
 
         # Fetch data from MercadoLibre API
         try:
-
-            data = MercadoLibreAPIService.get_data(path, params)
-            MercadoLibreAPIService.process_metadata(request, False, 200)
+            data, status = MercadoLibreAPIService.get_data(path, params)
+            MercadoLibreAPIService.process_metadata(request, False, status)
             CacheService.store_in_cache(cache_key, data)
-
             return Response(data)
         except requests.RequestException as e:
-            # todo handle status code from api
             status = e.status_code if hasattr(e, "status_code") else 400
             MercadoLibreAPIService.process_metadata(request, False, status)
-
             return Response({"error": str(e)}, status=status)
+
+    def post(self, request, *args, **kwargs):
+        # Testing rate limit post method by ip:)
+        return Response("OK", status=201)
+
 
 ```
 
@@ -301,6 +379,51 @@ Our view is solely responsible for processing the request to our MercadoLibreAPI
 where the application logic resides. Additionally, we have a CacheService that manages the cache. If our request is already cached, we simply process the response back to the user.
 
 If the request is not cached, we request it through MercadoLibreAPIService.process_metadata.
+
+
+#### 👮‍ Rate limits and block ip
+
+*important: our architecture is associated with a Redis cache, we can leverage it for persisting the rate limits in our EKS cluster.*
+
+An important point to highlight is the use of django_rate_limit. For testing purposes,}
+we've created a POST method limited to 5 requests per minute for each IP address. 
+Additionally, we have set a high rate limit for our marketplace proxy at 50,000 requests per second. 
+This setup allows us to combine IP-based blocking for a specific method within a defined time frame for requests.
+
+Given that our proxy doesn't pass through an authentication system, we can only implement IP-based
+restrictions. However, in the case of an application with authentication, we can make use of user_or_ip
+
+```bash
+@ratelimit(key='user_or_ip', rate='10/s')
+@ratelimit(key='user_or_ip', rate='100/m')
+```
+
+Django rate limit does not provide us with a mechanism to block specific IP addresses.
+That's why we've developed middleware that allows us to filter the request IP against a blacklist
+to determine whether to allow it through to the proxy or not. The code can be found in  proxy_app/proxy_pass/middleware_block_ip.py
+
+
+```bash
+
+class BlockIPMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        ip_address = request.META.get("REMOTE_ADDR")
+        logger.info(f"== Meta remote addr {ip_address} ==")
+        if ip_address in settings.BLOCKED_IPS:
+            response = HttpResponseForbidden("Raise middleware IP block.")
+            response.status_code = 403
+            return response
+        return self.get_response(request)
+```
+
+
+The blacklist can be configured within proxy/settings.py in the environment 
+variable BLOCKED_IPS = os.getenv("BLOCKED_IPS"), where BLOCKED_IPS is a list of blocked IP addresses
+
+
 
 ```bash
 class MercadoLibreAPIService:
@@ -329,14 +452,13 @@ class MercadoLibreAPIService:
         )
 ```
 
-Our get_data function only processes the request using the Python requests package.
 
 
-
-### Cache service
+### ⚓ Cache service (Elasticache Redis)
 
 
 ```bash
+
 class CacheService:
     @staticmethod
     def get_from_cache(cache_key: str) -> Any | None:
@@ -344,6 +466,7 @@ class CacheService:
         Retrieve data from cache.
         """
         if cached_data := cache.get(cache_key):
+            logger.info(f"=== RESPONSE CACHED {cache_key}")
             return json.loads(cached_data)
         return None
 
@@ -352,8 +475,22 @@ class CacheService:
         """
         Store data in cache.
         """
-        cache.set(cache_key, json.dumps(data), expiration_time)
+        allowed_cache = any(
+            word in settings.CACHED_PATHS for word in cache_key.split("/")
+        )
+        logger.info(f"=== CACHE ALLOWED {allowed_cache} - key {cache_key}")
+        if allowed_cache:
+            cache.set(cache_key, json.dumps(data), expiration_time)
+            logger.info(f"=== CACHED RESPONSE {cache_key}")
+
 ```
+
+
+The service that manages the cache for responses to the Mercado Libre API has 
+associated rules for storing this information. Firstly, we have permitted paths for caching.
+If the request's path is not associated with any of our permitted paths in the environment variable,
+it won't be processed for caching. On the other hand, if it is found in the CACHED_PATHS environment variable,
+it will be cached.
 
 ---
 # 📖 Motivation to create
@@ -367,14 +504,33 @@ We can summarize some important requirements to start designing the architecture
 - Generate an "API proxy" (proxy.com/categories/ ---> mercadolibre.com/categories/)
 - Blocking IPs and paths to the proxy
 - Visualize proxy usage statistics, if possible, expose a REST API
-- Run on Linux
 - Support scalability of 50k requests per second 
 
-First, we must consider that we will have a large number of requests to our proxy that we must support at the server level. It is not mentioned if there will be times of the day with more traffic, so we can start thinking about vertical and horizontal auto-scaling of our services. Additionally, an important requirement is to be able to block IPs and paths to our services. Based on this, we can take one of two paths: consider blocking at the application (code) level, which would create a significant bottleneck, or do it properly with a WAF. Additionally, we can consider geographical blocking (CloudFront) or latency, proximity, countries, etc.
+First, we must consider that we will have a large number of requests to our proxy that we must support at the server level. It is not mentioned if there 
+will be times of the day with more traffic, 
+so we can start thinking about vertical and horizontal auto-scaling of our services. Additionally, an important requirement is 
+to be able to block IPs and paths to our services. Based on this, we can take two paths:
+Firstly, implementing a WAF before accessing our services and processing the request, AWS WAF helps us have complex denial rules for a group of IPs, with IP sets, 
+path blocking, and a combination of these towards the resources we expose, in this case, our EKS proxy service.
 
-With these ideas in mind, the "simple" path with a basic architecture could be an EC2 instance with an auto-scaling group that increases instances as traffic increases. Initially, this may yield results, but we may fall short when scaling more services or considering decoupling components for further data processing. Due to this, I chose Kubernetes to self-manage some containers needed in the proxy. With Kubernetes, we can cover auto-scaling, redundancy, and operational excellence.
+Additionally, this requirement was also implemented at the application level, as explained in the "How does it work? rate limits" section,
+where we block certain IPs through middleware and specific paths as well as methods of the URLs within a defined time frame, such as seconds or minutes.
 
-We need to consume an external API (mercadolibre.com), it's important to handle exceptions that are beyond our control and return appropriate status codes. It's crucial to note that considering our example request (https://api.mercadolibre.com/categories/MLA97994), we can identify that we will likely have repeated requests over time from different users. In this use case, we can implement a cache to avoid re-requesting information from Mercado Libre. This way, we can provide much faster responses to our users, reduce third-party API failures, and scale the cache cluster for reading instead of our servers in a Kubernetes cluster, which would be more costly.
+With these ideas in mind, the "simple" path with a basic architecture could be an EC2 instance with an auto-scaling group that 
+increases instances as traffic increases. Initially, this may yield results, but we may fall short 
+when scaling more services or considering decoupling components for further data processing. Due to this, I chose Kubernetes to
+self-manage some containers needed in the proxy. With Kubernetes, we can cover auto-scaling, redundancy, and operational excellence.
+
+
+We need to consume an external API (mercadolibre.com), it's important to handle exceptions that are beyond our control and return
+appropriate status codes. It's crucial to note that considering our
+example request (https://api.mercadolibre.com/categories/MLA97994), we can identify that we will likely have repeated requests 
+over time from different users. In this use case, we can implement a cache to avoid re-requesting information from Mercado Libre.
+This way, we can provide much faster responses to our users, reduce third-party API failures, and scale the cache cluster for
+reading instead of our servers in a Kubernetes cluster, which would be more costly.
+
+However, we must also consider that not all responses should be cached. That's why we've defined a rule that allows us to save only the routes containing
+"/categories" and "/site" within the URL. These cache rules can be modified through the environment variable explained in the "How does it work? cache service" section.
 
 At this point, we have covered the following:
 
@@ -383,35 +539,53 @@ At this point, we have covered the following:
 - Efficiency
 
 
-For the proxy infrastructure, a crucial aspect highlighted by the Well-Architected Framework is security. Based on this, we will cover the part of blocking IPs and paths to the proxy. AWS WAF helps us have complex denial rules for a group of IPs, with IP sets, path blocking, and a combination of these towards the resources we expose, in this case, our EKS service.
+Once our proxy service is ready, we move on to the requirement of usage statistics. For this requirement, I took two approaches: one 
+regarding resource usage metrics (CPU, memory, latency, execution time, cluster health, etc.) and another regarding application metadata. 
+Infrastructure usage metrics can be covered using CloudWatch, which integrates well with our services, and an external tool like New Relic or 
+Prometheus-Grafana for our EKS cluster. For application metadata metrics, I decided to create an event-driven architecture to manage the information to process,
+as described in the architecture diagram. Basically, our synchronous proxy responds as quickly as possible to the user, and we use Celery to handle asynchronous
+tasks that process metadata from user requests, such as the IP source and requested path. This metadata is formatted and sent to an SQS queue that 
+keeps the messages available for a subscribed Lambda function to use this information and integrate it into DynamoDB for consumption through a REST API.
 
-Once our proxy service is ready, we move on to the requirement of usage statistics. For this requirement, I took two approaches: one regarding resource usage metrics (CPU, memory, latency, execution time, cluster health, etc.) and another regarding application metadata. Infrastructure usage metrics can be covered using CloudWatch, which integrates well with our services, and an external tool like New Relic or Prometheus-Grafana for our EKS cluster. For application metadata metrics, I decided to create an event-driven architecture to manage the information to process, as described in the architecture diagram. Basically, our synchronous proxy responds as quickly as possible to the user, and we use Celery to handle asynchronous tasks that process metadata from user requests, such as the IP source and requested path. This metadata is formatted and sent to an SQS queue that keeps the messages available for a subscribed Lambda function to use this information and integrate it into DynamoDB for consumption through a REST API.
-
-Certainly, the question arises as to why we don't directly send the metadata to DynamoDB from Celery. I made this architecture decision for three reasons:
+*Important considerations*
 
 - Reduce resource consumption in the deployment of Celery so that it only sends metadata to a queue and does not process it in DynamoDB.
-- Cost reduction when inserting into DynamoDB; instead of inserting item by item, the Lambda function can process batches of messages and send them to DynamoDB with lower latency at a VPC endpoint directly in its own network.
-- Having an event-driven architecture based on an SQS queue allows us more possibilities for operations with this information. For example, subscribing another Lambda function to send notifications in case of an unrecognized error state by our knowledge base in the external APIs indicating an uncontrolled failure. Since these are metadata statistics, they don't need to be available at that moment for reading. This processing to DynamoDB can take its time. Important for the production and development environment: Currently, in this solution, messages are read one by one. Ideally, messages should be processed in batches, for example, 10k messages in each reading from the SQS queue in batch.
+- Cost reduction when inserting into DynamoDB; instead of inserting item by item, the Lambda function can process batches of messages and send them to
+- DynamoDB with lower latency at a VPC endpoint directly in its own network.
+- Having an event-driven architecture based on an SQS queue allows us more possibilities for operations with this information. For example, subscribing
+- another Lambda function to send notifications in case of an unrecognized error state by our knowledge base in the external APIs indicating an 
+- uncontrolled failure. Since these are metadata statistics, they don't need to be available at that moment for reading. This processing to DynamoDB
+- can take its time. Important for the production and development environment: Currently, in this solution, messages are read one by one. Ideally,
+- messages should be processed in batches, for example, 10k messages in each reading from the SQS queue in batch.
 
 
-Once we have the application metadata available in DynamoDB, we will use a serverless architecture to serve a REST API based on FastAPI that exposes our DynamoDB data through an API Gateway. This is a simple but functional architecture for our current use case.
+Once we have the application metadata available in DynamoDB, we will use a serverless architecture to serve a REST API based on FastAPI that exposes our
+DynamoDB data through an API Gateway. 
 
----
+*important 2: It's important to consider that this architecture is intended for demonstration purposes, and the volume of 
+data we can ingest into our  DynamoDB can be very high. Therefore, we need to define rules to identify the information we 
+want to store in DynamoDB to reduce costs in our services.*
 
-# 🧪 First ideas
+One of the main motivations for exposing this data through FastAPI is to be able to extract important statistics for the business. see more in  *Fast Api metrics in house (product - lambda)*  section
 
-![arch](images/arch1.png)
+[//]: # ()
+[//]: # (# 🧪 First ideas)
 
+[//]: # ()
+[//]: # (![arch]&#40;images/arch1.png&#41;)
 
-# 🧪 Shaping
+[//]: # ()
+[//]: # ()
+[//]: # (# 🧪 Shaping)
 
-![arch2](images/arch2.png)
+[//]: # ()
+[//]: # (![arch2]&#40;images/arch2.png&#41;)
 
 ---
 
 # 🏗️ Architecture️  
 
-![arch2](images/arch3.jpeg)
+![arch2](images/arch3.png)
 
 
 
