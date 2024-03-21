@@ -17,6 +17,7 @@ requests = "*"
 boto3 = "*"
 pytest = "*"
 django-ratelimit = "*"
+newrelic = "*"
 
 [dev-packages]
 
