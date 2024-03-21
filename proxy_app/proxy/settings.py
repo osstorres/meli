@@ -167,7 +167,7 @@ class Base(Configuration):  # pylint:disable=W0232
     RATELIMIT_USE_CACHE = "default"
     BLOCKED_IPS = os.getenv("BLOCKED_IPS").split(",")
     CACHED_PATHS = os.getenv("CACHED_PATHS").split(",")
-
+    NEW_RELIC_LICENSE_KEY = os.getenv("NEW_RELIC_LICENSE_KEY")
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
     SESSION_CACHE_ALIAS = "default"
 
