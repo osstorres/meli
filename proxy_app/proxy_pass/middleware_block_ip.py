@@ -13,7 +13,7 @@ class BlockIPMiddleware:
         ip_address = request.META.get("REMOTE_ADDR")
         x_forward_for = request.META.get("X-Forwarded-For")
         logger.info(f"== Meta remote addr {ip_address} ==")
-        logger.info(f"== Meta remote addr {x_forward_for} ==")
+        logger.info(f"== Meta x_forward_for {x_forward_for} ==")
 
         if ip_address in settings.BLOCKED_IPS or x_forward_for in settings.BLOCKED_IPS:
             response = HttpResponseForbidden("Raise middleware IP block.")
