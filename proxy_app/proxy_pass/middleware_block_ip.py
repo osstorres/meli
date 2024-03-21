@@ -11,7 +11,7 @@ class BlockIPMiddleware:
 
     def __call__(self, request):
         ip_address = request.META.get("REMOTE_ADDR")
-        x_forward_for = request.META.__dict__
+        x_forward_for = request.META
         headers = request.headers.__dict__
         logger.info(f"== Meta remote addr {ip_address} ==")
         logger.info(f"== Meta x_forward_for {x_forward_for} ==")
