@@ -4,17 +4,6 @@ from datetime import datetime
 import json
 
 
-class SQSService:
-    def __init__(self, endpoint_url=None):
-        if endpoint_url:
-            self.client = boto3.client("sqs", endpoint_url=endpoint_url)
-        else:
-            self.client = boto3.client("sqs")
-
-    def delete_message(self, queue_url, receipt_handle):
-        self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
-
-
 class DynamoDBService:
     def __init__(self, endpoint_url=None):
         if endpoint_url:
@@ -27,8 +16,7 @@ class DynamoDBService:
 
 
 class MessageProcessor:
-    def __init__(self, sqs_service, dynamodb_service, dynamodb_table_name):
-        self.sqs_service = sqs_service
+    def __init__(self, dynamodb_service, dynamodb_table_name):
         self.dynamodb_service = dynamodb_service
         self.dynamodb_table_name = dynamodb_table_name
 
@@ -45,9 +33,7 @@ class MessageProcessor:
         :return: None
         """
         for record in event["Records"]:
-            print(f"RECORD {record}")
             body = json.loads(record["body"])
-            receipt_handle = record["receiptHandle"]
 
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -72,10 +58,9 @@ class MessageProcessor:
 
 def handler(event, context):
     print(f"MESSAGE {event}")
-    sqs_service = SQSService(endpoint_url=os.environ.get("SQS_ENDPOINT"))
     dynamodb_service = DynamoDBService(endpoint_url=os.environ.get("DYNAMODB_ENDPOINT"))
     message_processor = MessageProcessor(
-        sqs_service, dynamodb_service, os.environ.get("DYNAMODB_TABLE_NAME")
+        dynamodb_service, os.environ.get("DYNAMODB_TABLE_NAME")
     )
     message_processor.process_messages(event)
     print("======")
