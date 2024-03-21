@@ -2,8 +2,12 @@ from celery import shared_task
 import json
 import boto3
 import os
+from django.conf import settings
+import logging
+
 
 SQS_ENDPOINT = os.environ.get("SQS_ENDPOINT")
+logger = logging.getLogger("django")
 
 
 @shared_task()
@@ -31,4 +35,9 @@ def send_metadata_to_sqs(
     }
 
     # Send metadata to SQS
-    sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(metadata))
+    allowed_dynamodb = any(
+        word in settings.CACHED_PATHS for word in path.split("/")
+    )
+    if allowed_dynamodb:
+        logger.info(f"==== Dynamodb {path}")
+        sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(metadata))
