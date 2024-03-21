@@ -6,6 +6,8 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/load-balancer-name: "proxy-app-lb"
+    alb.ingress.kubernetes.io/healthcheck-path: /monitoring/health-check/
+
 spec:
   ingressClassName: alb
   rules:
