@@ -259,12 +259,12 @@ To get cache percentage of all metrics (application level).
  ```
 
 
-To get cache percentage of all metrics (application level).
+To get most common status code response (application level).
 
   ```sh
 ❯ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
 -H "Content-Type: application/json" \
--d '{"resource": "/cache_percentage", "path": "/cache_percentage", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
+-d '{"resource": "/status_code_most_common", "path": "/status_code_most_common", "httpMethod": "GET", "requestContext": {}, "multiValueQueryStringParameters": null}'
  ```
 
 
