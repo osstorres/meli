@@ -16,4 +16,4 @@ WORKDIR /app
 
 EXPOSE 8000
 ENTRYPOINT ["pipenv", "run"]
-CMD ["gunicorn", "--workers", "3", "--timeout", "360", "--bind", "0.0.0.0:8000", "proxy.wsgi"]
+CMD ["gunicorn", "--workers", "1", "--timeout", "360", "--bind", "0.0.0.0:8000", "proxy.wsgi", "--log-level", "debug" ]
