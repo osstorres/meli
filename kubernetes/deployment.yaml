@@ -35,11 +35,11 @@ spec:
             containerPort: 8000
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "500m"
+          limits:
+            memory: "1024Mi"
+            cpu: "1000m"
 
 ---
 apiVersion: apps/v1
@@ -64,14 +64,6 @@ spec:
         image: 00000000000.dkr.ecr.us-east-1.amazonaws.com/proxy-app:latest
         imagePullPolicy: Always
         args: [ "celery", "-A", "proxy", "worker", "-l", "INFO" ]
-        livenessProbe:
-          httpGet:
-            path: /monitoring/health-check/
-            port: 8000
-        readinessProbe:
-          httpGet:
-            path: /monitoring/health-check/
-            port: 8000
         envFrom:
         - secretRef:
             name: proxy-app-secret
@@ -80,11 +72,11 @@ spec:
             containerPort: 8000
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
             memory: "256Mi"
             cpu: "200m"
+          limits:
+            memory: "1024Mi"
+            cpu: "500m"
 
 ---
 
