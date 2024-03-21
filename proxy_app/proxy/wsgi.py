@@ -14,7 +14,7 @@ import newrelic.agent
 
 
 newrelic.agent.initialize(
-    "newrelic.ini",
+    os.path.join(os.path.dirname(__file__), "newrelic.ini"),
     environment="production",
 )
 settings_new_relic = newrelic.agent.global_settings()
