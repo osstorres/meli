@@ -68,9 +68,6 @@ class MessageProcessor:
             }
 
             self.dynamodb_service.put_item(self.dynamodb_table_name, item)
-            self.sqs_service.delete_message(
-                os.environ.get("SQS_QUEUE_URL"), receipt_handle
-            )
 
 
 def handler(event, context):
