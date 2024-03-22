@@ -77,7 +77,6 @@ class TestProxyView(APITestCase):
     def test_proxy_block_ip(self):
         response = self.client.get("/categories/MLA5725")
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(1, 2)
 
     def test_proxy_view_failure_1(self):
         response = self.client.get("/categories/MLA5725556asd")

@@ -53,7 +53,7 @@ aws dynamodb create-table \
     AttributeName=date_key,KeyType=HASH \
     AttributeName=path,KeyType=RANGE \
   --provisioned-throughput \
-    ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    ReadCapacityUnits=20,WriteCapacityUnits=20 \
   --endpoint-url $DYNAMODB_ENDPOINT
 
 
