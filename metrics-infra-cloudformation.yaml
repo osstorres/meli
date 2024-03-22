@@ -190,12 +190,12 @@ Resources:
     Properties:
       TableName: stats
       AttributeDefinitions:
-        - AttributeName: date_key
+        - AttributeName: id
           AttributeType: S
         - AttributeName: path
           AttributeType: S
       KeySchema:
-        - AttributeName: date_key
+        - AttributeName: id
           KeyType: HASH
         - AttributeName: path
           KeyType: RANGE
