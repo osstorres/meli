@@ -604,7 +604,7 @@ when consuming this data in dynamoDB. Therefore, a data pipeline is proposed as 
 
 ### Proxy URL: http://proxy.osieltorres.xyz/
 
-### Stats Metadata API:  https://kr94nz33lc.execute-api.us-east-1.amazonaws.com/prod/stats
+### Stats Metadata API: https://ihuzn0pm6h.execute-api.us-east-1.amazonaws.com/prod/stats
 
 ### Dashboards: (see more in new relic)
 ![arch2](images/dash.png)
