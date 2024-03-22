@@ -589,12 +589,12 @@ One of the main motivations for exposing this data through FastAPI is to be able
 
 
 
-# ✨ Production Env ✨ -- WIP
+# ✨ Production Env ✨
 
 
-### Proxy URL :
+### Proxy URL: http://proxy.osieltorres.xyz/
 
-### Stats Metadata API: 
+### Stats Metadata API:  https://kr94nz33lc.execute-api.us-east-1.amazonaws.com/prod/stats
 
-### Dashboards :
-
+### Dashboards: (see more in new relic)
+![arch2](images/dash.png)
