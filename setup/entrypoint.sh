@@ -47,14 +47,13 @@ echo "Create DynamoDB table"
 aws dynamodb create-table \
   --table-name $DYNAMODB_TABLE_NAME \
   --attribute-definitions \
-    AttributeName=date_key,AttributeType=S \
-    AttributeName=path,AttributeType=S \
+    AttributeName=id,AttributeType=S \
   --key-schema \
-    AttributeName=date_key,KeyType=HASH \
-    AttributeName=path,KeyType=RANGE \
+    AttributeName=id,KeyType=HASH \
   --provisioned-throughput \
     ReadCapacityUnits=20,WriteCapacityUnits=20 \
   --endpoint-url $DYNAMODB_ENDPOINT
+
 
 
 echo "Generating Lambda function ZIP"
