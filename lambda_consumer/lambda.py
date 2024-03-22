@@ -2,7 +2,7 @@ import boto3
 import os
 from datetime import datetime
 import json
-
+import uuid
 
 class DynamoDBService:
     def __init__(self, endpoint_url=None):
@@ -36,8 +36,9 @@ class MessageProcessor:
             body = json.loads(record["body"])
 
             current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+            unique_id = str(uuid.uuid4())
             item = {
+                "id": {"S": unique_id},
                 "date_key": {"S": current_datetime},
                 "query_params": {"S": json.dumps(body.get("query_params", {}))},
                 "cached": {"BOOL": body.get("cached", False)},

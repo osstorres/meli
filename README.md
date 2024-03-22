@@ -568,6 +568,16 @@ want to store in DynamoDB to reduce costs in our services.*
 
 One of the main motivations for exposing this data through FastAPI is to be able to extract important statistics for the business. see more in  *Fast Api metrics in house (product - lambda)*  section
 
+
+
+How can we scale our data lake for consumption?
+
+We are aware that our data ingestion into DynamoDB may increase, potentially leading to performance deficiencies in our API
+when consuming this data in dynamoDB. Therefore, a data pipeline is proposed as a secondary alternative to process the metrics outlined below.
+
+
+![arch2](images/data.png)
+
 [//]: # ()
 [//]: # (# 🧪 First ideas)
 
